@@ -1,4 +1,4 @@
-module Main exposing (Color, Model, Msg(..), generateInitList, init, main, update, view)
+module Main exposing (Model, Msg, Status, bubbleSort, getColor, init, main, subscriptions, update, view, viewAllTheLittleBoxes)
 
 import Browser
 import Browser.Events as Browser
@@ -6,6 +6,7 @@ import Html exposing (Html)
 import List
 import List.Extra as List
 import Random
+import Random.List as Random
 import Svg exposing (Svg)
 import Svg.Attributes as Attributes
 
@@ -17,52 +18,26 @@ type Status
 
 type alias Model =
     { list : List (List Int)
-    , colors : Colors
     , status : Status
     }
 
 
-type alias Color =
-    { r : Int
-    , g : Int
-    , b : Int
-    }
-
-
-type alias Colors =
-    List Color
-
-
-generateColor : Random.Generator Color
-generateColor =
-    Random.map3 Color (Random.int 0 255) (Random.int 0 255) (Random.int 0 255)
-
-
-generateColors : Random.Generator Colors
-generateColors =
-    generateColor
-        |> Random.list 10
-
-
-generateInitList : Random.Generator (List Int)
-generateInitList =
-    Random.int 0 9
-        |> Random.list 100
-
-
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( Model [ [ 0 ] ] [ Color 0 0 0 ] Unsorted, Random.generate InitModel generateInitList )
+    let
+        list =
+            List.range 0 100
+    in
+    ( Model [ list ] Unsorted, Random.generate InitModel <| Random.shuffle list )
 
 
 type Msg
     = InitModel (List Int)
-    | InitColors Colors
     | NextPass
 
 
-singlePassOfSort : List Int -> List Int
-singlePassOfSort list =
+bubbleSort : List Int -> List Int
+bubbleSort list =
     case list of
         [] ->
             []
@@ -79,20 +54,17 @@ singlePassOfSort list =
 
         x :: y :: xs ->
             if x > y then
-                y :: singlePassOfSort (x :: xs)
+                y :: bubbleSort (x :: xs)
 
             else
-                x :: singlePassOfSort (y :: xs)
+                x :: bubbleSort (y :: xs)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         InitModel ls ->
-            ( { model | list = [ ls ], status = Unsorted }, Random.generate InitColors generateColors )
-
-        InitColors colors ->
-            ( { model | colors = colors }, Cmd.none )
+            ( { model | list = [ ls ], status = Unsorted }, Cmd.none )
 
         NextPass ->
             let
@@ -101,7 +73,7 @@ update msg model =
                         |> Maybe.withDefault [ 0 ]
 
                 next =
-                    singlePassOfSort last
+                    bubbleSort last
             in
             if not (last == next) then
                 ( { model
@@ -117,19 +89,21 @@ update msg model =
                 ( { model | status = Sorted }, Cmd.none )
 
 
-getColor : Int -> Colors -> String
-getColor x colors =
+getColor : Int -> String
+getColor x =
     let
-        clr =
-            List.getAt x colors
-                |> Maybe.withDefault (Color 0 0 0)
+        sx =
+            toFloat x
+                |> (*) (255 / 100)
+                |> round
+                |> String.fromInt
     in
     "rgb("
-        ++ String.fromInt clr.r
+        ++ sx
         ++ ", "
-        ++ String.fromInt clr.g
+        ++ sx
         ++ ", "
-        ++ String.fromInt clr.b
+        ++ sx
         ++ ")"
 
 
@@ -152,7 +126,7 @@ viewAllTheLittleBoxes model =
                         , Attributes.y y_
                         , Attributes.width "10"
                         , Attributes.height "10"
-                        , Attributes.fill <| getColor v model.colors
+                        , Attributes.fill <| getColor v
                         ]
                         []
                 )
