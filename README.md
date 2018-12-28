@@ -4,7 +4,7 @@ Visualisation of bubble sort. See in action here: http://unpunk.de/bubble-sort
 
 ## Install
 
-Download repository at http://github.com/bubens/sorting and run the following commands in the folder:
+Download repository at http://github.com/bubens/view-bubble-sort and run the following commands in the folder:
 
 ```sh
 # Make make-script executable:
